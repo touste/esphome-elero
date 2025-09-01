@@ -28,16 +28,16 @@ void EleroCover::loop() {
   uint32_t now = millis();
   
   if (this->current_operation != COVER_OPERATION_IDLE) {
-    // while moving → only allow polling after ELERO_POLL_INTERVAL_MOVING has elapsed
-    if ((now - this->movement_start_) >= ELERO_POLL_INTERVAL_MOVING) {
-      intvl = ELERO_POLL_INTERVAL_MOVING;
-    } else {
-      // too early → skip polling
-      return;
-    }
+    // Use fast polling interval during movement
+    intvl = ELERO_POLL_INTERVAL_MOVING;
   }
   
-  if ((now > this->poll_offset_) && (now - this->poll_offset_ - this->last_poll_) > intvl) {
+  // Only push check command if either idle or movement grace period has elapsed
+  if ((now > this->poll_offset_) &&
+      (now - this->poll_offset_ - this->last_poll_ > intvl) &&
+      ((this->current_operation == COVER_OPERATION_IDLE) ||
+       (now - this->movement_start_ >= ELERO_POLL_INTERVAL_MOVING))) {
+  
     this->commands_to_send_.push(this->command_check_);
     this->last_poll_ = now - this->poll_offset_;
   }
